@@ -1,5 +1,5 @@
 import numpy as np
-from scipy import fft, optimize
+from scipy import optimize
 import matplotlib.pyplot as plt
 
 
@@ -8,65 +8,75 @@ def func_guess(X, height, P):
 
 
 def bessel_symbol(Xi, s):
-    return np.power((1 + np.power(Xi, 2)), -s / 2)
+    return (1 + Xi ** 2) ** (-s / 2)
 
 
-def FDP_const_sol(wavespeed, integration_const):
-    return (wavespeed + np.sqrt(wavespeed ** 2 + 8 * integration_const)) / 4
+def const_sol(mu, int_const):
+    return (mu + np.sqrt(mu ** 2 + 8 * int_const)) / 4
 
 
-def FDP_system(
-    sol, height, P, s, symbol_values, integration_const,
-):
-    phi, wavespeed = sol[:-1], sol[-1]
-    squared_phi_coeffs = fft.dct(np.power(phi, 2), type=1)
-    scaled_phi_coeffs = np.multiply(squared_phi_coeffs, symbol_values)
+def upper_bound_P(s):
+    return (2 * np.pi) / np.sqrt(3 ** (2 / s) - 1)
 
-    equation_error = (
-        wavespeed * phi
-        - (1 / 2) * np.power(phi, 2)
-        - (3 / 2) * fft.idct(scaled_phi_coeffs, type=1)
-        - integration_const
+
+def FDP_system(sol, height, P, s, symb_coeffs, int_const):
+    phi, mu = sol[:-1], sol[-1]
+
+    phi_coeffs = np.fft.rfft(phi ** 2)
+    mod_phi_coeffs = np.multiply(phi_coeffs, symb_coeffs)
+
+    eq_err = (
+        mu * phi
+        - (1 / 2) * phi ** 2
+        - (3 / 2) * np.fft.irfft(mod_phi_coeffs)
+        - int_const
     )
-    height_error = np.array(np.abs(height - phi[int(len(phi) / 2) + 1]))
-    return np.concatenate((equation_error, height_error))
+    height_err = np.array([np.abs(height - phi[(len(phi) // 2) + 1])])
+    return np.concatenate((eq_err, height_err))
 
 
 if __name__ == "__main__":
     s = 0.5
-    P = 0.9 * ((2 * np.pi) / np.sqrt(3 ** (2 / s) - 1))
-    N = 2 ** 8
+    P = 0.9 * upper_bound_P(s)
+    N = 500
     X = np.linspace(-P / 2, P / 2, N, endpoint=False)
-    integration_const = 1
+    int_const = 1
+    samples = 5
 
-    implicit_bifurcation_point = lambda wavespeed: 3 * bessel_symbol(
-        (2 * np.pi) / P, s
-    ) - (wavespeed - FDP_const_sol(wavespeed, integration_const)) / FDP_const_sol(
-        wavespeed, integration_const
-    )
-    bifurcation_point = optimize.fsolve(implicit_bifurcation_point, 1)
+    impl_bif_point = lambda mu: (
+        3 * const_sol(mu, int_const) * bessel_symbol((2 * np.pi) / P, s)
+    ) - (mu - const_sol(mu, int_const))
 
-    symbol_values = bessel_symbol(
-        np.array([(2 * np.pi * k) / P for k in range(0, len(X))]), s
-    )
-    H_relative = np.linspace(
-        0,
-        0.1 * (bifurcation_point - FDP_const_sol(bifurcation_point, integration_const)),
-        10,
+    bif_point = optimize.fsolve(impl_bif_point, 1)[0]
+    symb_coeffs = bessel_symbol(
+        np.array([(2 * np.pi * k) / P for k in range(0, (N // 2) + 1)]), s
     )
 
-    for i in range(0, len(H_relative)):
-        initial_phi_guess = func_guess(X, H_relative[i], P) + FDP_const_sol(
-            bifurcation_point, integration_const
-        )
-        initial_wavespeed_guess = np.array(bifurcation_point)
+    H = np.linspace(
+        const_sol(bif_point, int_const),
+        bif_point - 0.7 * const_sol(bif_point, int_const),
+        samples,
+    )
+    wavespeeds, max_heights = np.zeros(samples), np.zeros(samples)
 
-        F = lambda sol: FDP_system(
-            sol, H_relative[i], P, s, symbol_values, integration_const
-        )
+    print(const_sol(bif_point, int_const))
+    print(bif_point - 0.7 * const_sol(bif_point, int_const))
+
+    for i in range(0, samples):
+        phi_guess = func_guess(
+            X, H[i] - const_sol(bif_point, int_const), P
+        ) + const_sol(bif_point, int_const)
+        wavespeed_guess = np.array([bif_point])
+
+        F = lambda sol: FDP_system(sol, H[i], P, s, symb_coeffs, int_const)
         solution = optimize.fsolve(
-            F, np.concatenate((initial_phi_guess, initial_wavespeed_guess))
+            F, np.concatenate((phi_guess, wavespeed_guess)), xtol=1e-5
         )
-        print(solution[-1])
-        plt.plot(X, solution[:-1], linewidth=0.7)
+
+        wavespeeds[i] = solution[-1]
+        max_heights[i] = np.max(solution[:-1])
+        plt.plot(X, solution[:-1], "k", linewidth=0.7)
+
+    plt.show()
+    plt.plot(wavespeeds, max_heights, "k")
     plt.show()
