@@ -27,13 +27,13 @@ if __name__ == "__main__":
     P = 2 * np.pi
     N = 1000
     X = np.linspace(-P / 2, P / 2, N, endpoint=False)
-    samples = 10
+    samples = 15
 
     bif_point = bessel_symbol((2 * np.pi) / P, s)
     symb_coeffs = bessel_symbol(
         np.array([(2 * np.pi * k) / P for k in range(0, (N // 2) + 1)]), s
     )
-    H = np.linspace(0, 0.5 * bif_point, samples)
+    H = np.linspace(0, 0.6 * bif_point, samples)
     wavespeeds, max_heights = np.zeros(samples), np.zeros(samples)
 
     for i in range(0, samples):
@@ -42,12 +42,19 @@ if __name__ == "__main__":
 
         F = lambda sol: FKDV_system(sol, H[i], P, s, symb_coeffs)
         solution = optimize.fsolve(
-            F, np.concatenate((phi_guess, wavespeed_guess)), xtol=1e-5
+            F, np.concatenate((phi_guess, wavespeed_guess)), xtol=1e-6
         )
 
         wavespeeds[i] = solution[-1]
         max_heights[i] = np.max(solution[:-1])
         plt.plot(X, solution[:-1], "k", linewidth=0.7)
+    plt.ylabel(r"$\varphi (x)$")
+    plt.xlabel(r"$x$")
+    plt.savefig("bifurcation_fkdv.png")
     plt.show()
-    plt.plot(wavespeeds, max_heights, "k")
+    plt.plot(wavespeeds, max_heights, "k", linewidth=0.4)
+    plt.plot(wavespeeds, max_heights, "k.", linewidth=0.7)
+    plt.xlabel(r"$\mu$")
+    plt.ylabel(r"$\max \ \varphi$")
+    plt.savefig("bifurcation_branch_fkdv.png")
     plt.show()
