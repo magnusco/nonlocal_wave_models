@@ -1,3 +1,3 @@
-# FDP_solver
+# Nonlocal Wave Models
 
-Numerical bifurcation for fractional Korteweg--De Vries and fractional Degasperis--Procesi equations using a Fourier collocation method.
+Numerical bifurcation for a fractional Korteweg--De Vries and a fractional Degasperis--Procesi equation, using a Fourier collocation method.

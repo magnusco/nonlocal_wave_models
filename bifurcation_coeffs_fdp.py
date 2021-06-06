@@ -3,72 +3,70 @@ import matplotlib.pyplot as plt
 from scipy.optimize import fsolve
 
 
-def upper_bound_P(s):
-    return (2 * np.pi) / np.sqrt(np.power(3, 2 / s) - 1)
-
-
-def const_sol(wavespeed, integration_const):
-    return (wavespeed + np.sqrt(np.power(wavespeed, 2) + 8 * integration_const)) / 4
-
-
-def const_sol_der(wavespeed, integration_const):
-    return (1 / 4) * (
-        1
-        + np.divide(wavespeed, np.sqrt(np.power(wavespeed, 2) + 8 * integration_const))
-    )
-
-
 def bessel_symbol(Xi, s):
-    return np.power((1 + np.power(Xi, 2)), -s / 2)
+    return (1 + Xi ** 2) ** (-s / 2)
 
 
-def mu_2(Xi, s, bifurcation_point, const_sol, const_sol_der, symbol, integration_const):
-    a = 1 + 3 * symbol(Xi, s)
-    b = (3 * symbol(Xi, s) + 1) * const_sol_der(
-        bifurcation_point, integration_const
-    ) - 1
-    c = 1 / (4 * (const_sol(bifurcation_point, integration_const) - bifurcation_point))
-
-    d = 8 * (
-        3 * const_sol_der(bifurcation_point, integration_const) * symbol(2 * Xi, s)
-        - bifurcation_point
-        + const_sol(bifurcation_point, integration_const)
-    )
-
-    return (a / b) * (c + (a / d))
+def const_sol(mu, int_const):
+    return (mu + np.sqrt(mu ** 2 + 8 * int_const)) / 4
 
 
-def mu_2_part(Xi, s, symbol):
-    return 8 * (symbol(Xi, s) - symbol(2 * Xi, s)) - (
-        (1 - symbol(Xi, s)) * (1 + 3 * symbol(2 * Xi, s))
-    )
+def const_sol_der(mu, int_const):
+    return (1 / 4) * (1 + np.divide(mu, np.sqrt(np.power(mu, 2) + 8 * int_const)))
+
+
+def upper_bound_P(s):
+    return (2 * np.pi) / np.sqrt(3 ** (2 / s) - 1)
+
+
+def mu_2(Xi, s, symbol):
+    m_1 = bessel_symbol(Xi, s)
+    m_2 = bessel_symbol(2 * Xi, s)
+    return (1 / (1 - m_1)) - ((1 + 3 * m_2) / (8 * (m_1 - m_2)))
 
 
 if __name__ == "__main__":
-    N = 15
-    M = int(1e4)
-    S = np.linspace(0.3, 2, N)
-    integration_const = 1
-    smallest_mu_2_values = np.zeros(N)
-    largest_mu_2_values = np.zeros(N)
+    s_samples = 20
+    dx = 1e-3
+    S = np.linspace(0.2, 0.9, s_samples)
+    int_const = 1
+    s = 0.9
 
-    for i in range(0, N):
+    P = upper_bound_P(s)
+    P_values = np.arange(1e-1, P, dx)
+    Xi = (2 * np.pi) / P_values
+
+    mu_2_values = mu_2(Xi, s, bessel_symbol)
+    plt.plot(P_values, mu_2_values, "k", linewidth=0.7)
+    plt.plot(P_values, np.zeros(len(P_values)), "k", linewidth=0.7)
+    plt.ylim([-5, 5])
+    plt.show()
+
+    exit()
+
+    ############################################################################
+    min_mu_2_values = np.zeros(s_samples)
+    max_mu_2_values = np.zeros(s_samples)
+    for i in range(0, s_samples):
         P = upper_bound_P(S[i])
-        Xi = (2 * np.pi) / np.linspace(1e-6, P, M, endpoint=False)
-        symbol = bessel_symbol
+        Xi = (2 * np.pi) / np.arange(1e-5, P, dx)
 
-        # bifurcation_points_implicit = lambda wavespeed: (
-        #     wavespeed - const_sol(wavespeed, integration_const)
-        # ) - 3 * const_sol(wavespeed, integration_const) * bessel_symbol(Xi, S[i])
+        impl_bif_points = lambda mu: (mu - const_sol(mu, int_const)) - (
+            3 * const_sol(mu, int_const) * bessel_symbol(Xi, S[i])
+        )
 
-        # bifurcation_points = fsolve(bifurcation_points_implicit, np.ones(M))
+        bif_points = fsolve(impl_bif_points, np.ones(len(Xi)))
+        const_sols = const_sol(bif_points, int_const)
+        const_sol_ders = const_sol_der(bif_points, int_const)
 
-        mu_2_values = mu_2_part(Xi, S[i], symbol)
-        smallest_mu_2_values[i] = np.min(np.abs(mu_2_values))
+        mu_2_values = mu_2(
+            Xi, S[i], bif_points, const_sols, const_sol_ders, bessel_symbol
+        )
+        min_mu_2_values[i] = np.min(np.abs(mu_2_values))
 
     plt.xlabel(r"$s$")
     plt.ylabel(r"$\min\ |\mu_2|$")
-    plt.plot(S, smallest_mu_2_values, "k")
+    plt.plot(S, min_mu_2_values, "k")
     plt.savefig("mu_2_fdp.png")
     plt.show()
     plt.close()
