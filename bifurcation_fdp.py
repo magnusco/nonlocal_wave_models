@@ -39,11 +39,11 @@ def FDP_system(sol, height, P, s, symb_coeffs, int_const):
 
 if __name__ == "__main__":
     s = 0.5
-    P = 0.5 * upper_bound_P(s)
-    N = 1000
+    P = 0.3 * upper_bound_P(s)
+    N = 1500
     X = np.linspace(-P / 2, P / 2, N, endpoint=False)
     int_const = 1
-    samples = 15
+    samples = 14
 
     impl_bif_point = lambda mu: (
         3 * const_sol(mu, int_const) * bessel_symbol((2 * np.pi) / P, s)
@@ -54,7 +54,7 @@ if __name__ == "__main__":
         np.array([(2 * np.pi * k) / P for k in range(0, (N // 2) + 1)]), s
     )
     min_height = const_sol(bif_point, int_const) - bif_point
-    H = np.linspace(0, 0.6 * min_height, samples)
+    H = np.linspace(0, 1 * min_height, samples)
     wavespeeds, max_heights = np.zeros(samples), np.zeros(samples)
     wavespeed_guess = np.array([bif_point])
 
@@ -67,18 +67,25 @@ if __name__ == "__main__":
         varphi = const_sol(solution[-1], int_const) - solution[:-1]
         wavespeeds[i] = solution[-1]
         max_heights[i] = np.max(varphi)
-        wavespeed_guess = np.array([solution[-1]]) + 0.5
+        wavespeed_guess = np.array([solution[-1]]) + (solution[-1] - solution[-2])
         plt.plot(X, varphi, "k", linewidth=0.7)
 
     plt.ylabel(r"$\varphi (x)$")
     plt.xlabel(r"$x$")
-    plt.savefig("bifurcation_fdp.png")
+    # plt.savefig("bifurcation_fdp.png")
     plt.show()
     plt.plot(wavespeeds, max_heights, "k", linewidth=0.4)
     plt.plot(wavespeeds, max_heights, "k.", linewidth=0.7)
-    # plt.plot(wavespeeds, wavespeeds, "r")
-    # plt.plot(wavespeeds, const_sol(wavespeeds, int_const), "b")
+
+    lower, upper = 2.1, 2.8
+    interval = np.linspace(lower, upper, 50)
+    plt.plot(interval, interval, "k")
+    plt.plot(
+        interval,
+        const_sol(interval, int_const),
+        "b",
+    )
     plt.xlabel(r"$\mu$")
     plt.ylabel(r"$\max \ \varphi$")
-    plt.savefig("bifurcation_branch_fdp.png")
+    # plt.savefig("bifurcation_branch_fdp.png")
     plt.show()
