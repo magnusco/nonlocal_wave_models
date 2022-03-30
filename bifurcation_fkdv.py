@@ -25,7 +25,7 @@ def FKDV_system(sol, height, P, s, symb_coeffs):
 if __name__ == "__main__":
     s = 0.5
     P = 2 * np.pi
-    N = 1500
+    N = 1200
     X = np.linspace(-P / 2, P / 2, N, endpoint=False)
     samples = 14
 
@@ -47,17 +47,19 @@ if __name__ == "__main__":
 
         wavespeeds[i] = solution[-1]
         max_heights[i] = np.max(solution[:-1])
-        plt.plot(X, solution[:-1], "k", linewidth=0.7)
+        plt.plot(X, solution[:-1], "k", linewidth=0.3)
 
     plt.ylabel(r"$\varphi (x)$")
     plt.xlabel(r"$x$")
-    # plt.savefig("bifurcation_fkdv.png")
-    plt.show()
+    plt.savefig("bifurcation_fkdv.eps")
+    plt.savefig("bifurcation_fkdv.pdf")
+    plt.close()
     plt.plot(wavespeeds, max_heights, "k", linewidth=0.4)
     plt.plot(wavespeeds, max_heights, "k.", linewidth=0.7)
     plt.plot(np.linspace(0.73, 0.87, 50), np.linspace(0.73, 0.87, 50), "k")
     plt.plot(np.linspace(0.73, 0.87, 50), np.zeros(50), "b")
     plt.xlabel(r"$\mu$")
     plt.ylabel(r"$\max \ \varphi$")
-    # plt.savefig("bifurcation_branch_fkdv.png")
-    plt.show()
+    plt.savefig("bifurcation_branch_fkdv.eps")
+    plt.savefig("bifurcation_branch_fkdv.pdf")
+    plt.close()

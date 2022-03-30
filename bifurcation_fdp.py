@@ -40,7 +40,7 @@ def FDP_system(sol, height, P, s, symb_coeffs, int_const):
 if __name__ == "__main__":
     s = 0.5
     P = 0.3 * upper_bound_P(s)
-    N = 1500
+    N = 1200
     X = np.linspace(-P / 2, P / 2, N, endpoint=False)
     int_const = 1
     samples = 14
@@ -68,15 +68,16 @@ if __name__ == "__main__":
         wavespeeds[i] = solution[-1]
         max_heights[i] = np.max(varphi)
         wavespeed_guess = np.array([solution[-1]]) + (solution[-1] - solution[-2])
-        plt.plot(X, varphi, "k", linewidth=0.7)
+        plt.plot(X, varphi, "k", linewidth=0.3)
 
     plt.ylabel(r"$\varphi (x)$")
     plt.xlabel(r"$x$")
-    # plt.savefig("bifurcation_fdp.png")
-    plt.show()
+    plt.savefig("bifurcation_fdp.eps")
+    plt.savefig("bifurcation_fdp.pdf")
+    plt.close()
+
     plt.plot(wavespeeds, max_heights, "k", linewidth=0.4)
     plt.plot(wavespeeds, max_heights, "k.", linewidth=0.7)
-
     lower, upper = 2.1, 2.8
     interval = np.linspace(lower, upper, 50)
     plt.plot(interval, interval, "k")
@@ -87,5 +88,6 @@ if __name__ == "__main__":
     )
     plt.xlabel(r"$\mu$")
     plt.ylabel(r"$\max \ \varphi$")
-    # plt.savefig("bifurcation_branch_fdp.png")
-    plt.show()
+    plt.savefig("bifurcation_branch_fdp.eps")
+    plt.savefig("bifurcation_branch_fdp.pdf")
+    plt.close()
